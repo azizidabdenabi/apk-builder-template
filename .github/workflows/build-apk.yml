@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
@@ -31,25 +31,30 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Configure App Settings
+      - name: Initialize Capacitor App & Generate Android
         run: |
-          echo "Building APK for: ${{ github.event.inputs.app_name }} with URL: ${{ github.event.inputs.web_url }}"
-
-      - name: Install Dependencies & Build Web
-        run: |
-          npm install || true
-          npm run build || true
-
-      - name: Add Android & Sync
-        run: |
-          npx cap add android || true
-          npx cap sync android || true
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "${{ github.event.inputs.app_name }}" "com.example.app" --web-dir "www"
+          mkdir -p www
+          cat <<EOF > www/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <script>window.location.href = "${{ github.event.inputs.web_url }}";</script>
+          </head>
+          <body></body>
+          </html>
+          EOF
+          npx cap add android
+          npx cap sync android
 
       - name: Build APK via Gradle
         run: |
-          cd android || exit 0
-          chmod +x gradlew || true
-          ./gradlew assembleDebug || true
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

@@ -31,34 +31,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Create Web App Redirect
+      - name: Create Web Directory
         run: |
           mkdir -p www
-          cat << 'EOF' > www/index.html
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script>window.location.href = "${{ github.event.inputs.web_url }}";</script>
-          </head>
-          <body></body>
-          </html>
-          EOF
+          echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>window.location.href = "${{ github.event.inputs.web_url }}";</script></head><body></body></html>' > www/index.html
 
-      - name: Install Capacitor & Setup Android
+      - name: Install Dependencies and Sync Capacitor
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "${{ github.event.inputs.app_name }}" "com.app.builder" --web-dir "www"
+          npx cap init "${{ github.event.inputs.app_name }}" "com.app.builder" --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Build APK via Gradle Wrapper
+      - name: Build APK with Gradle
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
